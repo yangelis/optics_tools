@@ -1,0 +1,68 @@
+default:
+  on_x1: 0
+  on_sep1: 0
+  on_x2: 0
+  on_sep2: 0
+  on_x5: 0
+  on_sep5: 0
+  on_x8h: 0
+  on_x8v: 0
+  on_sep8h: 0
+  on_sep8v: 0
+  on_a1: 0
+  on_o1: 0
+  on_a2: 0
+  on_o2: 0
+  on_a5: 0
+  on_o5: 0
+  on_a8: 0
+  on_o8: 0
+  on_disp: 0
+  cd2q4: 0
+
+xing_1_short:
+  on_x1: 250
+  cd2q4: 0
+
+xing_1_long:
+  on_x1: 250
+  cd2q4: 1
+
+xing_5_short:
+  on_x5: 250
+  cd2q4: 0
+
+xing_5_long:
+  on_x5: 250
+  cd2q4: 1
+
+xing_15_short:
+  on_x1: 250
+  on_x5: 250
+  cd2q4: 0
+
+xing_15_long:
+  on_x1: 250
+  on_x5: 250
+  cd2q4: 1
+
+xing_all:
+  on_x1: 250
+  on_sep1: 0
+  on_x2: -170
+  on_sep2: 0.138
+  on_x5: 250
+  on_sep5: 0
+  on_x8h: 0.0
+  on_x8v: 170
+  on_sep8h: -0.01
+  on_sep8v: 0.01
+  on_a1: 0
+  on_o1: 0
+  on_a2: 0
+  on_o2: 0
+  on_a5: 0
+  on_o5: 0
+  on_a8: 0
+  on_o8: 0
+  on_disp: 0

@@ -1,0 +1,22 @@
+acc-models-lhc:
+  round:
+    thick_580: acc-models-lhc/strengths/round/levelling/opt_levelling_580_1500.madx
+    thick_150: acc-models-lhc/strengths/round/opt_round_150_1500.madx
+  flat:
+    thick_500_2000: acc-models-lhc/strengths/flat/opt_flathv_500_2000.madx
+
+summer_studies:
+  collapse:
+    round:
+      thick_700: summer_studies/collapse/opt_collapse_700_1500.madx
+      thick_1100: summer_studies/collapse/opt_collapse_1100_1500.madx
+    flat:
+      thick_450_1800: summer_studies/collapse/opt_flathv_450_1800_1500.madx
+      thick_600_1200: summer_studies/collapse/opt_flathv_600_1200_1500.madx
+      thick_700_2800: summer_studies/collapse/opt_collapse_flathv_700_2800.madx
+      thick_900_1800: summer_studies/collapse/opt_collapse_flathv_900_1800_1500.madx
+  SoL:
+    round:
+      thick_580: summer_studies/SoL/opt_levelling_580_1500.madx
+    flat:
+      thick_300_1200: summer_studies/SoL/opt_flathv_300_1200_1500.madx
