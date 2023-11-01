@@ -56,48 +56,37 @@ def plot_xing_ip15(collider, bim=1):
     plt.show()
 
 
-def plot_xing_from_tw(tw, bim=1):
-    line_name = "lhcb1"
-    if bim == 2:
-        line_name = "lhcb2"
+def plot_xing_from_tw(tw, bim=None):
+    if bim is not None:
+        if bim == 1:
+            tw = tw["lhcb1"]
+        elif bim == 2:
+            tw = tw["lhcb2"]
 
     fig, axs = plt.subplots(figsize=(21, 18))
     axs.grid()
     axs.set_title(f"Beam {bim}")
-    axs.plot(tw_k[line_name]["s"], tw_k[line_name]["x"], label="x", color="black", lw=3)
-    axs.plot(tw_k[line_name]["s"], tw_k[line_name]["y"], label="y", color="red", lw=3)
+    axs.plot(tw["s"], tw["x"], label="x", color="black", lw=3)
+    axs.plot(tw["s"], tw["y"], label="y", color="red", lw=3)
     # axs.set_ylim(-0.016, 0.016)
     axs00 = axs.twinx()
-    axs00.plot(
-        tw_k[line_name]["s"],
-        tw_k[line_name]["dx"],
-        label="Dx",
-        color="green",
-        lw=1,
-        linestyle="--",
-    )
-    axs00.plot(
-        tw_k[line_name]["s"],
-        tw_k[line_name]["dy"],
-        label="Dy",
-        color="blue",
-        lw=1,
-        linestyle="--",
-    )
+    axs00.plot(tw["s"], tw["dx"], label="Dx", color="green", lw=1, linestyle="--")
+    axs00.plot(tw["s"], tw["dy"], label="Dy", color="blue", lw=1, linestyle="--")
     axs00.set_ylim(-4, 4)
     axs00.set_ylabel("$Dx,Dy \\ [m]$")
     axs01 = axs.twiny()
-    axs01.set_xticks(
-        tw_k[line_name][["s"], "ip.*"],
-        tw_k[line_name][["name"], "ip.*"],
-        rotation="horizontal",
-    )
+    axs01.set_xticks(tw[["s"], "ip.*"], tw[["name"], "ip.*"], rotation="horizontal")
     axs01.set_xlim(axs.get_xlim())
     axs.set_xlabel("$s \\ [m]$")
     axs.set_ylabel("$CO \\ [m]$")
     axs.legend(loc=2)
     axs00.legend(loc=0)
     plt.show()
+
+
+def plot_xing(collider, bim=1):
+    twc = collider.twiss()
+    plot_xing_from_tw(twc, bim)
 
 
 def plot_beta_ip15(collider, bim=1):
@@ -171,7 +160,12 @@ for optics_set in optics_list.items():
 hpre = os.getenv("HOME")
 prefix = f"{hpre}/Projects/hllhc_optics/"
 
-optics_name = prefix + optics_list["acc-models-lhc"]["round"]["thick_150"]
+# optics_name = prefix + optics_list["acc-models-lhc"]["round"]["thick_150"]
+optics_name = prefix + optics_list["acc-models-lhc"]["round"]["thick_580"]  # good
+
+# optics_name = (
+# prefix + "/summer_studies/collapse/opt_collapse_1000_1500_ats_500_x5hl.madx"
+# )
 
 # %%
 collider = None
@@ -197,22 +191,94 @@ tw0 = collider.twiss()
 print("Beam1:", tw0.lhcb1[["betx", "bety"], "ip.*"])
 print("Beam2:", tw0.lhcb2[["betx", "bety"], "ip.*"])
 
+# %%
+collider.lhcb1.cycle("ip3", inplace=True)
+collider.lhcb2.cycle("ip3", inplace=True)
+# collider_set_knobs(collider, config_knobs["xing_5_long"], config_knobs["default"])
+# collider_set_knobs(collider, config_knobs["xing_5_short"], config_knobs["default"])
 
-#  %%
-
-
-collider_set_knobs(collider, config_knobs["xing_5_short"], config_knobs["default"])
 # %%
 for knob_set in config_knobs.items():
     print(f"Testing set {knob_set[0]}")
     collider_set_knobs(collider, knob_set[1], config_knobs["default"])
     print(50 * "#")
 
+# %%
+
+# check arcs
+for knob_set in config_knobs.items():
+    print(f"Testing set {knob_set[0]} in arcs")
+    collider_set_knobs(collider, knob_set[1], config_knobs["default"])
+    for i, j in arcs:
+        for bim in [1, 2]:
+            tw_arcij = twiss_arc(collider, i, j, bim)
+            assert np.isclose(np.max(tw_arcij.x), 0, atol=1e-7, rtol=0)
+            assert np.isclose(np.max(tw_arcij.y), 0, atol=1e-7, rtol=0)
+
+            assert np.isclose(np.max(tw_arcij.px), 0, atol=1e-7, rtol=0)
+            assert np.isclose(np.max(tw_arcij.py), 0, atol=1e-7, rtol=0)
+
+
+# check ip1
+for knobs_set in [config_knobs["xing_1_short"], config_knobs["xing_1_long"]]:
+    collider_set_knobs(collider, knobs_set, config_knobs["default"])
+    tw_kn = collider.twiss()
+    ips_tw_b1 = tw_kn.lhcb1.rows["ip.*"]
+    ips_tw_b2 = tw_kn.lhcb2.rows["ip.*"]
+
+    assert np.isclose(
+        ips_tw_b1.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(
+        -ips_tw_b2.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(ips_tw_b1.rows["ip1"].py[0], 0, atol=1e-7, rtol=0)
+    assert np.isclose(ips_tw_b2.rows["ip1"].py[0], 0, atol=1e-7, rtol=0)
+
 
 # %%
-collider.lhcb1.cycle("ip3", inplace=True)
-collider.lhcb2.cycle("ip3", inplace=True)
-collider_set_knobs(collider, config_knobs["xing_5_long"], config_knobs["default"])
+# check ip5
+for knobs_set in [config_knobs["xing_5_short"], config_knobs["xing_5_long"]]:
+    collider_set_knobs(collider, knobs_set, config_knobs["default"])
+    tw_kn = collider.twiss()
+    ips_tw_b1 = tw_kn.lhcb1.rows["ip.*"]
+    ips_tw_b2 = tw_kn.lhcb2.rows["ip.*"]
+
+    assert np.isclose(
+        ips_tw_b1.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(
+        -ips_tw_b2.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(ips_tw_b1.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
+    assert np.isclose(ips_tw_b2.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
+
+# %%
+# check ip1 and ip5
+for knobs_set in [config_knobs["xing_15_short"], config_knobs["xing_15_long"]]:
+    collider_set_knobs(collider, knobs_set, config_knobs["default"])
+    tw_kn = collider.twiss()
+    ips_tw_b1 = tw_kn.lhcb1.rows["ip.*"]
+    ips_tw_b2 = tw_kn.lhcb2.rows["ip.*"]
+
+    assert np.isclose(
+        ips_tw_b1.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(
+        -ips_tw_b2.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(
+        ips_tw_b1.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(
+        -ips_tw_b2.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+    )
+    assert np.isclose(ips_tw_b1.rows["ip1"].py[0], 0, atol=1e-7, rtol=0)
+    assert np.isclose(ips_tw_b2.rows["ip1"].py[0], 0, atol=1e-7, rtol=0)
+    assert np.isclose(ips_tw_b1.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
+    assert np.isclose(ips_tw_b2.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
+
+#
 # %%
 
 tw_k = collider.twiss()
@@ -232,5 +298,15 @@ plot_arcs_betas(collider, bim=1)
 plot_arcs_betas(collider, bim=2)
 # plot_arcs_xy(collider)
 
+# %%
+plot_arcs_xy(collider, bim=1)
+plot_arcs_xy(collider, bim=2)
+
+# %%
+tw_arc12 = twiss_arc(collider, 1, 2, 1)
+# %%
+
+plot_xing(collider, bim=1)
+plot_xing(collider, bim=2)
 
 # %%
