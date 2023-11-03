@@ -127,7 +127,7 @@ def plot_beta_ip15(collider, bim=1):
     plt.show()
 
 
-def collider_set_knobs(collider, knobs_vals, knob_vals_to_reset=None):
+def collider_set_knobs(collider, knobs_vals, knob_vals_to_reset=None, to_print=False):
     if knob_vals_to_reset is not None:
         for knob_val in knob_vals_to_reset.items():
             collider.varval[knob_val[0]] = knob_val[1]
@@ -137,8 +137,9 @@ def collider_set_knobs(collider, knobs_vals, knob_vals_to_reset=None):
         collider.varval[knob_val[0]] = knob_val[1]
 
     tw1 = collider.twiss()
-    print("Beam1:", tw1.lhcb1[["betx", "bety", "x", "y", "px", "py"], "ip.*"])
-    print("Beam2:", tw1.lhcb2[["betx", "bety", "x", "y", "px", "py"], "ip.*"])
+    if to_print:
+        print("Beam1:", tw1.lhcb1[["betx", "bety", "x", "y", "px", "py"], "ip.*"])
+        print("Beam2:", tw1.lhcb2[["betx", "bety", "x", "y", "px", "py"], "ip.*"])
     return tw1
 
 
@@ -161,7 +162,10 @@ hpre = os.getenv("HOME")
 prefix = f"{hpre}/Projects/hllhc_optics/"
 
 # optics_name = prefix + optics_list["acc-models-lhc"]["round"]["thick_150"]
-optics_name = prefix + optics_list["acc-models-lhc"]["round"]["thick_580"]  # good
+# optics_name = prefix + optics_list["acc-models-lhc"]["levelling"]["thick_580"]  # good
+# optics_name = prefix + optics_list["summer_studies"]["collapse"]["round"]["thick_1100"]
+
+optics_name = prefix + "summer_studies/collapse/opt_collapse_1100_1500_fix_betas.madx"
 
 # optics_name = (
 # prefix + "/summer_studies/collapse/opt_collapse_1000_1500_ats_500_x5hl.madx"
@@ -278,7 +282,38 @@ for knobs_set in [config_knobs["xing_15_short"], config_knobs["xing_15_long"]]:
     assert np.isclose(ips_tw_b1.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
     assert np.isclose(ips_tw_b2.rows["ip5"].px[0], 0, atol=1e-7, rtol=0)
 
-#
+# %%
+# check all xing
+knobs_set = config_knobs["xing_all"]
+collider_set_knobs(collider, knobs_set, config_knobs["default"], to_print=True)
+tw_kn = collider.twiss()
+ips_tw_b1 = tw_kn.lhcb1.rows["ip.*"]
+ips_tw_b2 = tw_kn.lhcb2.rows["ip.*"]
+assert np.isclose(
+    ips_tw_b1.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    -ips_tw_b2.rows["ip5"].py[0], knobs_set["on_x5"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    ips_tw_b1.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    -ips_tw_b2.rows["ip1"].px[0], knobs_set["on_x1"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    ips_tw_b1.rows["ip2"].py[0], knobs_set["on_x2"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    -ips_tw_b2.rows["ip2"].py[0], knobs_set["on_x2"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    ips_tw_b1.rows["ip8"].py[0], knobs_set["on_x8v"] * 1e-6, atol=1e-7, rtol=0
+)
+assert np.isclose(
+    -ips_tw_b2.rows["ip8"].py[0], knobs_set["on_x8v"] * 1e-6, atol=1e-7, rtol=0
+)
+
 # %%
 
 tw_k = collider.twiss()
@@ -308,5 +343,56 @@ tw_arc12 = twiss_arc(collider, 1, 2, 1)
 
 plot_xing(collider, bim=1)
 plot_xing(collider, bim=2)
+
+# %%
+tw_ip8_b1 = tw_k.lhcb1[:, "e.ds.l8.b1":"s.ds.r8.b1"]
+tw_ip8_b2 = tw_k.lhcb2[:, "e.ds.l8.b2":"s.ds.r8.b2"]
+
+fig, axs = plt.subplots(2, 1, figsize=(15, 15))
+axs[0].set_title("IP 8, Beam 1")
+axs[0].plot(tw_ip8_b1["s"], tw_ip8_b1["x"], label="x", color="black", lw=3)
+axs[0].plot(tw_ip8_b1["s"], tw_ip8_b1["y"], label="y", color="red", lw=3)
+axs[0].set_xlabel("s [m]")
+axs[0].set_ylabel(r"$co [m]$")
+axs[0].legend()
+axs[0].grid()
+
+axs[1].set_title("IP 8, Beam 2")
+axs[1].plot(tw_ip8_b2["s"], tw_ip8_b2["x"], label="x", color="black", lw=3)
+axs[1].plot(tw_ip8_b2["s"], tw_ip8_b2["y"], label="y", color="red", lw=3)
+axs[1].set_xlabel("s [m]")
+axs[1].set_ylabel(r"$co [m]$")
+axs[1].legend()
+axs[1].grid()
+
+plt.show()
+
+# %%
+test_config = {"on_x1": 250, "on_x5": 250, "cd2q4": 0.5}
+tw_test = collider_set_knobs(
+    collider, test_config, config_knobs["default"], to_print=False
+)
+tw_test_ip1 = tw_test.lhcb1[:, "e.ds.l1.b1":"s.ds.r1.b1"]
+tw_test_ip5 = tw_test.lhcb1[:, "e.ds.l5.b1":"s.ds.r5.b1"]
+
+print(tw_test_ip1[["x", "y", "px", "py"], "ip1"])
+print(tw_test_ip5[["x", "y", "px", "py"], "ip5"])
+
+fig, axs = plt.subplots(2, 1, figsize=(15, 15))
+axs[0].set_title("IP 1, Beam 1")
+axs[0].plot(tw_test_ip1["s"], tw_test_ip1["x"], label="x", color="black", lw=3)
+axs[0].plot(tw_test_ip1["s"], tw_test_ip1["y"], label="y", color="red", lw=3)
+axs[0].set_xlabel("s [m]")
+axs[0].set_ylabel(r"$co [m]$")
+axs[0].legend()
+axs[0].grid()
+axs[1].set_title("IP 5, Beam 1")
+axs[1].plot(tw_test_ip5["s"], tw_test_ip5["x"], label="x", color="black", lw=3)
+axs[1].plot(tw_test_ip5["s"], tw_test_ip5["y"], label="y", color="red", lw=3)
+axs[1].set_xlabel("s [m]")
+axs[1].set_ylabel(r"$co [m]$")
+axs[1].legend()
+axs[1].grid()
+plt.show()
 
 # %%
