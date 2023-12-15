@@ -1,10 +1,10 @@
 # %%
 from misc import *
 
-try:
-    get_ipython().run_line_magic("matplotlib", "inline")
-except:
-    pass
+# try:
+#     get_ipython().run_line_magic("matplotlib", "inline")
+# except:
+#     pass
 
 
 # %%
@@ -165,15 +165,21 @@ prefix = f"{hpre}/Projects/hllhc_optics/"
 # optics_name = prefix + optics_list["acc-models-lhc"]["levelling"]["thick_580"]  # good
 # optics_name = prefix + optics_list["summer_studies"]["collapse"]["round"]["thick_1100"]
 
-optics_name = prefix + "summer_studies/collapse/opt_collapse_1100_1500_fix_betas.madx"
+# optics_name = prefix + "summer_studies/collapse/opt_collapse_1100_1500.madx"
+optics_name = prefix + "opt_phased_1100_1500.madx"
 
 # optics_name = (
 # prefix + "/summer_studies/collapse/opt_collapse_1000_1500_ats_500_x5hl.madx"
 # )
+# optics_name = (
+#     prefix + "madx_vs_xsuite_rematch/madx/opt_round_1000_cc_angle_optim_all.madx"
+# )
+optics_name = prefix + 'madx_vs_xsuite_rematch/madx/opt_round_1100_cc_angle_optim_again.madx'
 
 # %%
 collider = None
 collider_name = "collider_hl16.json"
+# collider_name = "collider_phase_31.200_30.238.json"
 if os.path.exists(collider_name):
     collider = xt.Multiline.from_json(collider_name)
 else:
@@ -190,6 +196,10 @@ collider.build_trackers()
 collider.lhcb1.twiss_default["method"] = "4d"
 collider.lhcb2.twiss_default["method"] = "4d"
 collider.lhcb2.twiss_default["reverse"] = True
+# %%
+collider["lhcb1"].twiss_default["method"] = "4d"
+collider["lhcb2"].twiss_default["method"] = "4d"
+collider["lhcb2"].twiss_default["reverse"] = True
 # %%
 tw0 = collider.twiss()
 print("Beam1:", tw0.lhcb1[["betx", "bety"], "ip.*"])
@@ -368,12 +378,12 @@ axs[1].grid()
 plt.show()
 
 # %%
-test_config = {"on_x1": 250, "on_x5": 250, "cd2q4": 0.5}
+test_config = {"on_x1": 250, "on_x5": 250, "cd2q4": 0.1}
 tw_test = collider_set_knobs(
     collider, test_config, config_knobs["default"], to_print=False
 )
-tw_test_ip1 = tw_test.lhcb1[:, "e.ds.l1.b1":"s.ds.r1.b1"]
-tw_test_ip5 = tw_test.lhcb1[:, "e.ds.l5.b1":"s.ds.r5.b1"]
+tw_test_ip1 = tw_test["lhcb1"][:, "e.ds.l1.b1":"s.ds.r1.b1"]
+tw_test_ip5 = tw_test["lhcb1"][:, "e.ds.l5.b1":"s.ds.r5.b1"]
 
 print(tw_test_ip1[["x", "y", "px", "py"], "ip1"])
 print(tw_test_ip5[["x", "y", "px", "py"], "ip5"])

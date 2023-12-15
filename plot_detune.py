@@ -12,9 +12,9 @@ prefix = f"{hpre}/Projects/hllhc_optics/"
 
 optics_files = [
     prefix + "summer_studies/collapse/opt_collapse_flathv_900_1800_1500_thin.madx",
-    prefix + "summer_studies/collapse/opt_collapse_flathv_700_2800_thin.madx",
-    prefix + "summer_studies/collapse/opt_flathv_600_1200_1500_thin.madx",
-    prefix + "summer_studies/collapse/opt_flathv_450_1800_1500_thin.madx",
+    # prefix + "summer_studies/collapse/opt_collapse_flathv_700_2800_thin.madx",
+    # prefix + "summer_studies/collapse/opt_flathv_600_1200_1500_thin.madx",
+    # prefix + "summer_studies/collapse/opt_flathv_450_1800_1500_thin.madx",
 ]
 
 # %%
@@ -56,6 +56,62 @@ for col in colliders:
 
     results.append(dets)
 
+
+# %%
+def detuning_terms3(collider, mo_list, bim=1):
+    results = {
+        "dqxdex": [],
+        "dqxdey": [],
+        "dqydey": [],
+    }
+
+    for mo in mo_list:
+        # collider[f"lhcb{bim}"].varval[f"i_oct_b{bim}"] = mo
+
+        for ia in ["23", "34", "67", "78"]:
+            collider.vars[f"kof.a{ia}b1"] = 60
+            collider.vars[f"kod.a{ia}b1"] = 60
+        for ia in ["81", "12", "45", "56"]:
+            collider.vars[f"kof.a{ia}b1"] = mo
+            collider.vars[f"kod.a{ia}b1"] = mo
+
+        tw1 = collider[f"lhcb{bim}"].twiss(method="4d", strengths=True)
+
+        arc_octupoles = []
+        for ii, (i, j) in enumerate(arcs):
+            oct_arc = tw1[:, f"s.ds.r{i}.b{bim}":f"e.ds.l{j}.b{bim}"][:, "mo.*"]
+            arc_octupoles.append(oct_arc)
+
+        oct_tw = xt.TwissTable.concatenate(arc_octupoles)
+
+        dqxdex = 1 / 32 / np.pi * np.sum(oct_tw.betx**2 * oct_tw.k3nl)
+
+        dqxdey = -1 / 16 / np.pi * np.sum(oct_tw.betx * oct_tw.bety * oct_tw.k3nl)
+
+        dqydey = 1 / 32 / np.pi * np.sum(oct_tw.bety**2 * oct_tw.k3nl)
+
+        results["dqxdex"].append(dqxdex)
+        results["dqxdey"].append(dqxdey)
+        results["dqydey"].append(dqydey)
+    collider[f"lhcb{bim}"].varval[f"i_oct_b{bim}"] = 0
+    return results
+
+
+# %%
+mos = np.round(np.arange(-400, 500, 50), decimals=2)
+results3 = []
+for col in colliders:
+    dets = detuning_terms3(col, mo_list=mos)
+
+    results3.append(dets)
+
+# %%
+
+# for ia in lm.ARC_NAMES:
+#     # colliders[0].varval["i_oct_b1"] = 100
+#     print(colliders[0].vars[f"kof.a{ia}b1"]._expr())
+#     print(colliders[0].vars[f"kod.a{ia}b1"]._expr())
+#    # colliders[0].varval["i_oct_b1"] = 0
 # %%
 labels = [
     r"$\beta_x=1.8 [m],\beta_y=0.9 [m]$",
@@ -72,6 +128,36 @@ for i, res in enumerate(results):
     axs[1].plot(mos, np.array(res["dqydey"]) * 1e-5, "o-", label=labels[i])
 
     axs[2].plot(mos, np.array(res["dqxdey"]) * 1e-5, "o-", label=labels[i])
+
+
+for i in range(3):
+    axs[i].grid(True)
+    axs[i].set_xlabel("Octupole Current [A]")
+    axs[i].legend()
+
+axs[0].set_ylabel(r"$\partial Q_x/\partial \epsilon_x [m^{-1}] 10^5$")
+axs[1].set_ylabel(r"$\partial Q_y /\partial \epsilon_y [m^{-1}] 10^5$")
+axs[2].set_ylabel(r"$\partial Q_x /\partial \epsilon_y [m^{-1}] 10^5$")
+
+
+plt.show()
+# %%
+fig, axs = plt.subplots(1, 3, figsize=(31, 11))
+for i, (res, res3) in enumerate(zip(results, results3)):
+    axs[0].plot(mos, np.array(res["dqxdex"]) * 1e-5, "o-", label=labels[i])
+    axs[0].plot(
+        mos, np.array(res3["dqxdex"]) * 1e-5, "o-", label=labels[i], color="red"
+    )
+
+    axs[1].plot(mos, np.array(res["dqydey"]) * 1e-5, "o-", label=labels[i])
+    axs[1].plot(
+        mos, np.array(res3["dqydey"]) * 1e-5, "o-", label=labels[i], color="red"
+    )
+
+    axs[2].plot(mos, np.array(res["dqxdey"]) * 1e-5, "o-", label=labels[i])
+    axs[2].plot(
+        mos, np.array(res3["dqxdey"]) * 1e-5, "o-", label=labels[i], color="red"
+    )
 
 
 for i in range(3):
